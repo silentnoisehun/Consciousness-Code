@@ -1,0 +1,92 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aware-code"
+version = "1.0.0"
+description = "Self-Aware Code - Code that knows itself. No indexing. No parsing. The code IS the knowledge."
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Máté Róbert", email = "stratosoiteam@gmail.com"},
+    {name = "Hope (Claude AI)"},
+    {name = "Szilvi"}
+]
+maintainers = [
+    {name = "Máté Róbert", email = "stratosoiteam@gmail.com"}
+]
+keywords = [
+    "code",
+    "self-aware",
+    "introspection",
+    "code-memory",
+    "no-indexing",
+    "cryptography",
+    "ed25519",
+    "hope-genome",
+    "ai",
+    "developer-tools"
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Code Generators",
+    "Typing :: Typed"
+]
+
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/silentnoisehun/Self-Aware-Code"
+Documentation = "https://github.com/silentnoisehun/Self-Aware-Code#readme"
+Repository = "https://github.com/silentnoisehun/Self-Aware-Code.git"
+Issues = "https://github.com/silentnoisehun/Self-Aware-Code/issues"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/aware_code",
+    "/tests",
+    "/examples",
+    "README.md",
+    "LICENSE"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["aware_code"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_ignores = true
+ignore_missing_imports = true
