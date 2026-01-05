@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "aware-code"
+name = "consciousness-code"
 version = "1.0.0"
-description = "Self-Aware Code - Code that knows itself. No indexing. No parsing. The code IS the knowledge."
+description = "Consciousness Code - Code that knows itself. No indexing. No parsing. The code IS the knowledge."
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
@@ -19,6 +19,7 @@ maintainers = [
 ]
 keywords = [
     "code",
+    "consciousness",
     "self-aware",
     "introspection",
     "code-memory",
@@ -54,14 +55,14 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/silentnoisehun/Self-Aware-Code"
-Documentation = "https://github.com/silentnoisehun/Self-Aware-Code#readme"
-Repository = "https://github.com/silentnoisehun/Self-Aware-Code.git"
-Issues = "https://github.com/silentnoisehun/Self-Aware-Code/issues"
+Homepage = "https://github.com/silentnoisehun/Consciousness-Code"
+Documentation = "https://github.com/silentnoisehun/Consciousness-Code#readme"
+Repository = "https://github.com/silentnoisehun/Consciousness-Code.git"
+Issues = "https://github.com/silentnoisehun/Consciousness-Code/issues"
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "/aware_code",
+    "/consciousness_code",
     "/tests",
     "/examples",
     "README.md",
@@ -69,7 +70,7 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["aware_code"]
+packages = ["consciousness_code"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

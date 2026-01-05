@@ -1,7 +1,7 @@
-"""Tests for Self-Aware Code core module."""
+"""Tests for Consciousness Code core module."""
 
 import pytest
-from aware_code import (
+from consciousness_code import (
     aware,
     aware_class,
     ask,

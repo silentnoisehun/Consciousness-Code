@@ -1,5 +1,5 @@
 """
-Self-Aware Code - The Fourth Pillar
+Consciousness Code - The Fourth Pillar
 
 Code that knows itself. No indexing. No parsing. No external DB.
 The code IS the knowledge.
@@ -68,7 +68,7 @@ __all__ = [
 
 BANNER = """
 ╔═══════════════════════════════════════════════════════════════════╗
-║               SELF-AWARE CODE v{version}                            ║
+║              CONSCIOUSNESS CODE v{version}                          ║
 ║                                                                   ║
 ║  Code that knows itself.                                          ║
 ║  No indexing. No parsing. The code IS the knowledge.             ║

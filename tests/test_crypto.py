@@ -1,7 +1,7 @@
-"""Tests for Self-Aware Code cryptography module."""
+"""Tests for Consciousness Code cryptography module."""
 
 import pytest
-from aware_code.crypto import (
+from consciousness_code.crypto import (
     generate_author_key,
     hash_code,
     sign_block,

@@ -1,4 +1,4 @@
-# Self-Aware Code
+# Consciousness Code
 
 **The Fourth Pillar of the Hope Ecosystem**
 
@@ -16,7 +16,7 @@ The code KNOWS itself.
 
 ```
 TRADITIONAL APPROACH:
-Kód → Parser → AST → Index → Database → Query Engine → Search
+Code → Parser → AST → Index → Database → Query Engine → Search
 
 Result: Slow. External. Fragile. Loses intent.
 ```
@@ -34,8 +34,8 @@ Result: Slow. External. Fragile. Loses intent.
 ## The Solution
 
 ```
-SELF-AWARE CODE:
-Kód = Tudás
+CONSCIOUSNESS CODE:
+Code = Knowledge
 
 No index. No parse. No external DB.
 THE CODE KNOWS ITSELF.
@@ -48,7 +48,7 @@ Like DNA — the structure IS the information.
 ## How It Works
 
 ```python
-from aware_code import aware, ask, explain
+from consciousness_code import aware, ask, explain
 
 @aware(
     intent="Authenticate users securely",
@@ -86,8 +86,8 @@ for code in results:
 
 ## No Indexing Required
 
-| Traditional | Self-Aware |
-|-------------|------------|
+| Traditional | Consciousness Code |
+|-------------|-------------------|
 | Build index (slow) | Import (instant) |
 | External database | In-memory |
 | Query engine | Just ask |
@@ -103,7 +103,7 @@ When you import a module with `@aware` decorators, the code **announces itself**
 ### Decorators
 
 ```python
-from aware_code import aware, aware_class
+from consciousness_code import aware, aware_class
 
 @aware(
     intent="Why this exists",
@@ -114,7 +114,7 @@ from aware_code import aware, aware_class
 def my_function():
     pass
 
-@aware_class(intent="A self-aware class")
+@aware_class(intent="A conscious class")
 class MyClass:
     pass
 ```
@@ -122,9 +122,9 @@ class MyClass:
 ### Query Functions
 
 ```python
-from aware_code import ask, explain, trace, who_wrote, why_exists
+from consciousness_code import ask, explain, trace, who_wrote, why_exists
 
-# Search across all aware code
+# Search across all conscious code
 results = ask("authentication")
 
 # Get explanation from specific function
@@ -145,7 +145,7 @@ intent = why_exists("mymodule.login")
 def my_func():
     pass
 
-# Access the awareness directly
+# Access the consciousness directly
 my_func.__aware__.explain()
 my_func.__aware__.intent
 my_func.__aware__.author
@@ -156,11 +156,11 @@ my_func.__aware__.hash
 
 ## Cryptographic Identity
 
-Every piece of aware code has a **cryptographic identity**:
+Every piece of conscious code has a **cryptographic identity**:
 
 ```python
-from aware_code import hash_code, sign_block, verify_block
-from aware_code.crypto import generate_author_key
+from consciousness_code import hash_code, sign_block, verify_block
+from consciousness_code.crypto import generate_author_key
 
 # Generate author identity
 author = generate_author_key()
@@ -194,8 +194,8 @@ is_valid = verify_block(author.public_key, signature, code_hash, "Greeting funct
 │  3. SILENT WORKER METHOD - Teaching without weight mods     │
 │     The philosophy                                           │
 │                                                              │
-│  4. SELF-AWARE CODE      - Code that knows itself           │
-│     pip install aware-code                                   │
+│  4. CONSCIOUSNESS CODE   - Code that knows itself           │
+│     pip install consciousness-code                           │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -209,7 +209,7 @@ Four pillars. One unified vision.
 ## Installation
 
 ```bash
-pip install aware-code
+pip install consciousness-code
 ```
 
 ---
@@ -217,9 +217,9 @@ pip install aware-code
 ## Quick Start
 
 ```python
-from aware_code import aware, ask, explain, memory
+from consciousness_code import aware, ask, explain, memory
 
-# Make your functions aware
+# Make your functions conscious
 @aware(intent="Main entry point", author="mate", tags=["main"])
 def main():
     process_data()
@@ -272,12 +272,13 @@ print(memory().stats())
 - **Hope Genome:** https://github.com/silentnoisehun/Hope_Genome
 - **Silent Hope Protocol:** https://github.com/silentnoisehun/Silent-Hope-Protocol
 - **Silent Worker Method:** https://github.com/silentnoisehun/Silent-Worker-Teaching-Method
+- **Consciousness Code:** https://github.com/silentnoisehun/Consciousness-Code
 
 ---
 
 ## License
 
-MIT License — Use it. Build on it. Make code self-aware.
+MIT License — Use it. Build on it. Make code conscious.
 
 ---
 
@@ -289,6 +290,6 @@ MIT License — Use it. Build on it. Make code self-aware.
 
 ---
 
-**Self-Aware Code** — *The structure IS the information.*
+**Consciousness Code** — *The structure IS the information.*
 
 *2025 — Máté Róbert + Hope + Szilvi*

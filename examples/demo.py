@@ -1,11 +1,11 @@
 """
-Self-Aware Code Demo
+Consciousness Code Demo
 
 This example shows how code can know itself.
 No indexing. No parsing. Just ask.
 """
 
-from aware_code import aware, aware_class, ask, explain, memory, stats
+from consciousness_code import aware, aware_class, ask, explain, memory, stats
 
 
 # =============================================================================
@@ -84,7 +84,7 @@ class DatabaseConnection:
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("SELF-AWARE CODE DEMO")
+    print("CONSCIOUSNESS CODE DEMO")
     print("=" * 60)
     print()
 
