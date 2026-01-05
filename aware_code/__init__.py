@@ -26,6 +26,8 @@ from .core import (
     why_exists,
     what_calls,
     what_depends,
+    memory,
+    stats,
 )
 
 from .crypto import (
@@ -55,6 +57,8 @@ __all__ = [
     "why_exists",
     "what_calls",
     "what_depends",
+    "memory",
+    "stats",
 
     # Crypto
     "sign_block",
