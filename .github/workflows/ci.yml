@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -30,4 +31,4 @@ jobs:
         run: pytest tests/ -v
 
       - name: Run crypto self-test
-        run: python -c "from aware_code.crypto import self_test; assert self_test()"
+        run: python -c "from consciousness_code.crypto import self_test; assert self_test()"
