@@ -1,15 +1,16 @@
 """Tests for Consciousness Code core module."""
 
 import pytest
+
 from consciousness_code import (
+    ask,
     aware,
     aware_class,
-    ask,
     explain,
-    who_wrote,
-    why_exists,
     memory,
     stats,
+    who_wrote,
+    why_exists,
 )
 
 
@@ -116,6 +117,44 @@ class TestCodeMemory:
         assert "total_blocks" in s
         assert "files" in s
         assert "authors" in s
+
+    def test_by_author_by_tag(self):
+        """Test finding code by author and by tag."""
+        @aware(intent="Author search", author="unique_author_x", tags=["unique_tag_y"])
+        def func_x():
+            pass
+
+        mem = memory()
+        author_blocks = mem.by_author("unique_author_x")
+        tag_blocks = mem.by_tag("unique_tag_y")
+
+        assert len(author_blocks) >= 1
+        assert func_x.__aware__.qualified_name in [b.qualified_name for b in author_blocks]
+        assert len(tag_blocks) >= 1
+        assert func_x.__aware__.qualified_name in [b.qualified_name for b in tag_blocks]
+
+    def test_calls_and_depends(self):
+        """Test explicit call and dependency tracking."""
+        @aware(intent="Dependency block")
+        def dep_func():
+            pass
+
+        dep_name = dep_func.__aware__.qualified_name
+
+        @aware(intent="Caller block", calls=[dep_name], depends_on=[dep_name])
+        def caller_func():
+            pass
+
+        caller_name = caller_func.__aware__.qualified_name
+
+        mem = memory()
+        dep_block = mem.get(dep_name)
+        caller_block = mem.get(caller_name)
+
+        assert dep_name in caller_block.calls
+        assert dep_name in caller_block.depends_on
+        assert caller_name in dep_block.called_by
+        assert caller_name in dep_block.depended_by
 
 
 class TestExplain:

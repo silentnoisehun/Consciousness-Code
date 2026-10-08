@@ -6,23 +6,18 @@ The code knows itself. No indexing required.
 Created by Máté Róbert + Hope
 """
 
+import functools
 import hashlib
 import inspect
-import functools
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
     Optional,
-    Set,
     TypeVar,
-    Union,
+    cast,
 )
-from pathlib import Path
-
 
 F = TypeVar('F', bound=Callable[..., Any])
 
@@ -59,29 +54,29 @@ class CodeBlock:
     created_at: float = field(default_factory=time.time)
 
     # Relationships (discovered at runtime)
-    calls: Set[str] = field(default_factory=set)
-    called_by: Set[str] = field(default_factory=set)
-    depends_on: Set[str] = field(default_factory=set)
-    depended_by: Set[str] = field(default_factory=set)
+    calls: set[str] = field(default_factory=set)
+    called_by: set[str] = field(default_factory=set)
+    depends_on: set[str] = field(default_factory=set)
+    depended_by: set[str] = field(default_factory=set)
 
     # Tags for semantic search
-    tags: Set[str] = field(default_factory=set)
+    tags: set[str] = field(default_factory=set)
 
     # The actual callable
-    _callable: Optional[Callable] = field(default=None, repr=False)
+    _callable: Callable | None = field(default=None, repr=False)
 
     def explain(self) -> str:
         """The code explains itself."""
         parts = [
             f"=== {self.qualified_name} ===",
-            f"",
+            "",
             f"Intent: {self.intent or 'Not specified'}",
             f"Description: {self.description or 'Not specified'}",
             f"Author: {self.author}",
-            f"",
+            "",
             f"Location: {self.file_path}:{self.line_number}",
             f"Hash: {self.hash[:16]}...",
-            f"",
+            "",
         ]
 
         if self.calls:
@@ -124,14 +119,18 @@ class CodeMemory:
     """
 
     _instance: Optional['CodeMemory'] = None
+    _blocks: dict[str, CodeBlock]
+    _by_file: dict[str, list[str]]
+    _by_author: dict[str, list[str]]
+    _by_tag: dict[str, list[str]]
 
     def __new__(cls) -> 'CodeMemory':
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._blocks: Dict[str, CodeBlock] = {}
-            cls._instance._by_file: Dict[str, List[str]] = {}
-            cls._instance._by_author: Dict[str, List[str]] = {}
-            cls._instance._by_tag: Dict[str, List[str]] = {}
+            cls._instance._blocks = {}
+            cls._instance._by_file = {}
+            cls._instance._by_author = {}
+            cls._instance._by_tag = {}
         return cls._instance
 
     def register(self, block: CodeBlock) -> None:
@@ -142,25 +141,43 @@ class CodeMemory:
         if block.file_path:
             if block.file_path not in self._by_file:
                 self._by_file[block.file_path] = []
-            self._by_file[block.file_path].append(block.qualified_name)
+            if block.qualified_name not in self._by_file[block.file_path]:
+                self._by_file[block.file_path].append(block.qualified_name)
 
         # Organize by author
         if block.author:
             if block.author not in self._by_author:
                 self._by_author[block.author] = []
-            self._by_author[block.author].append(block.qualified_name)
+            if block.qualified_name not in self._by_author[block.author]:
+                self._by_author[block.author].append(block.qualified_name)
 
         # Organize by tags
         for tag in block.tags:
             if tag not in self._by_tag:
                 self._by_tag[tag] = []
-            self._by_tag[tag].append(block.qualified_name)
+            if block.qualified_name not in self._by_tag[tag]:
+                self._by_tag[tag].append(block.qualified_name)
 
-    def get(self, name: str) -> Optional[CodeBlock]:
+        # Update bidirectional relationships for calls and depends_on
+        for call_target in block.calls:
+            if call_target in self._blocks:
+                self._blocks[call_target].called_by.add(block.qualified_name)
+
+        for dep_target in block.depends_on:
+            if dep_target in self._blocks:
+                self._blocks[dep_target].depended_by.add(block.qualified_name)
+
+        for other in self._blocks.values():
+            if block.qualified_name in other.calls:
+                block.called_by.add(other.qualified_name)
+            if block.qualified_name in other.depends_on:
+                block.depended_by.add(other.qualified_name)
+
+    def get(self, name: str) -> CodeBlock | None:
         """Get a code block by name."""
         return self._blocks.get(name)
 
-    def ask(self, question: str) -> List[CodeBlock]:
+    def ask(self, question: str) -> list[CodeBlock]:
         """
         Ask the code a question.
 
@@ -174,26 +191,26 @@ class CodeMemory:
 
         return results
 
-    def by_author(self, author: str) -> List[CodeBlock]:
+    def by_author(self, author: str) -> list[CodeBlock]:
         """Find all code written by an author."""
         names = self._by_author.get(author, [])
         return [self._blocks[n] for n in names]
 
-    def by_file(self, file_path: str) -> List[CodeBlock]:
+    def by_file(self, file_path: str) -> list[CodeBlock]:
         """Find all code in a file."""
         names = self._by_file.get(file_path, [])
         return [self._blocks[n] for n in names]
 
-    def by_tag(self, tag: str) -> List[CodeBlock]:
+    def by_tag(self, tag: str) -> list[CodeBlock]:
         """Find all code with a tag."""
         names = self._by_tag.get(tag, [])
         return [self._blocks[n] for n in names]
 
-    def all(self) -> List[CodeBlock]:
+    def all(self) -> list[CodeBlock]:
         """Get all known code blocks."""
         return list(self._blocks.values())
 
-    def trace(self, name: str, depth: int = 3) -> Dict[str, Any]:
+    def trace(self, name: str, depth: int = 3) -> dict[str, Any]:
         """
         Trace the call graph from a function.
 
@@ -203,7 +220,7 @@ class CodeMemory:
         if not block:
             return {"error": f"Unknown: {name}"}
 
-        def trace_calls(n: str, d: int) -> Dict:
+        def trace_calls(n: str, d: int) -> dict:
             if d <= 0:
                 return {"name": n, "calls": "..."}
 
@@ -219,7 +236,7 @@ class CodeMemory:
 
         return trace_calls(name, depth)
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """Statistics about the code memory."""
         return {
             "total_blocks": len(self._blocks),
@@ -241,8 +258,10 @@ def _compute_hash(source: str) -> str:
 def aware(
     intent: str = "",
     author: str = "unknown",
-    tags: Optional[List[str]] = None,
+    tags: list[str] | None = None,
     description: str = "",
+    calls: list[str] | None = None,
+    depends_on: list[str] | None = None,
 ) -> Callable[[F], F]:
     """
     Make a function self-aware.
@@ -288,6 +307,8 @@ def aware(
             source_code=source,
             file_path=file_path,
             line_number=line_number,
+            calls=set(calls or []),
+            depends_on=set(depends_on or []),
             tags=set(tags or []),
             _callable=func,
         )
@@ -301,9 +322,9 @@ def aware(
             return func(*args, **kwargs)
 
         # Attach awareness
-        wrapper.__aware__ = block
+        setattr(wrapper, '__aware__', block)
 
-        return wrapper
+        return cast(F, wrapper)
 
     return decorator
 
@@ -311,8 +332,10 @@ def aware(
 def aware_class(
     intent: str = "",
     author: str = "unknown",
-    tags: Optional[List[str]] = None,
+    tags: list[str] | None = None,
     description: str = "",
+    calls: list[str] | None = None,
+    depends_on: list[str] | None = None,
 ) -> Callable[[type], type]:
     """
     Make a class self-aware.
@@ -341,6 +364,8 @@ def aware_class(
             source_code=source,
             file_path=file_path,
             line_number=line_number,
+            calls=set(calls or []),
+            depends_on=set(depends_on or []),
             tags=set(tags or []),
         )
 
@@ -348,7 +373,7 @@ def aware_class(
         _memory.register(block)
 
         # Attach awareness
-        cls.__aware__ = block
+        setattr(cls, '__aware__', block)
 
         # Make methods aware too
         for name, method in inspect.getmembers(cls, predicate=inspect.isfunction):
@@ -374,7 +399,7 @@ def aware_class(
 # Query Functions - Ask the code!
 # ============================================================================
 
-def ask(question: str) -> List[CodeBlock]:
+def ask(question: str) -> list[CodeBlock]:
     """
     Ask the code a question.
 
@@ -401,7 +426,7 @@ def explain(name: str) -> str:
     return f"Unknown: {name}"
 
 
-def trace(name: str, depth: int = 3) -> Dict[str, Any]:
+def trace(name: str, depth: int = 3) -> dict[str, Any]:
     """
     Trace the call graph from a function.
 
@@ -428,7 +453,7 @@ def why_exists(name: str) -> str:
     return "unknown"
 
 
-def what_calls(name: str) -> Set[str]:
+def what_calls(name: str) -> set[str]:
     """Ask what functions a piece of code calls."""
     block = _memory.get(name)
     if block:
@@ -436,7 +461,7 @@ def what_calls(name: str) -> Set[str]:
     return set()
 
 
-def what_depends(name: str) -> Set[str]:
+def what_depends(name: str) -> set[str]:
     """Ask what depends on a piece of code."""
     block = _memory.get(name)
     if block:
@@ -449,6 +474,6 @@ def memory() -> CodeMemory:
     return _memory
 
 
-def stats() -> Dict[str, Any]:
+def stats() -> dict[str, Any]:
     """Get statistics about the code memory."""
     return _memory.stats()

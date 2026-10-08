@@ -5,8 +5,12 @@ This example shows how code can know itself.
 No indexing. No parsing. Just ask.
 """
 
-from consciousness_code import aware, aware_class, ask, explain, memory, stats
+import os
+import sys
 
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from consciousness_code import ask, aware, aware_class, memory, stats
 
 # =============================================================================
 # Make functions self-aware

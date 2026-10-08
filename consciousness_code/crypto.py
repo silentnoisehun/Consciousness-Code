@@ -12,7 +12,6 @@ import secrets
 import struct
 import time
 from dataclasses import dataclass
-from typing import Optional, Tuple
 
 
 class CryptoError(Exception):
@@ -28,7 +27,7 @@ ED25519_I = pow(2, (ED25519_P - 1) // 4, ED25519_P)
 ED25519_BY = 4 * pow(5, ED25519_P - 2, ED25519_P) % ED25519_P
 
 
-def _recover_x(y: int, sign: int) -> Optional[int]:
+def _recover_x(y: int, sign: int) -> int | None:
     """Recover x coordinate from y coordinate on Ed25519 curve."""
     if y >= ED25519_P:
         return None
@@ -55,7 +54,9 @@ def _recover_x(y: int, sign: int) -> Optional[int]:
     return x
 
 
-ED25519_BX = _recover_x(ED25519_BY, 0)
+_bx = _recover_x(ED25519_BY, 0)
+assert _bx is not None
+ED25519_BX: int = _bx
 ED25519_B = (ED25519_BX, ED25519_BY, 1, ED25519_BX * ED25519_BY % ED25519_P)
 
 
@@ -101,7 +102,7 @@ def _point_compress(P) -> bytes:
     zi = pow(z, ED25519_P - 2, ED25519_P)
     x = x * zi % ED25519_P
     y = y * zi % ED25519_P
-    return (y | ((x & 1) << 255)).to_bytes(32, 'little')
+    return bytes((y | ((x & 1) << 255)).to_bytes(32, 'little'))
 
 
 def _point_decompress(s: bytes) -> tuple:
@@ -179,7 +180,7 @@ def sign_block(
     private_key: bytes,
     code_hash: bytes,
     intent: str,
-    timestamp: Optional[int] = None
+    timestamp: int | None = None,
 ) -> bytes:
     """
     Sign a code block.
@@ -190,7 +191,7 @@ def sign_block(
         raise CryptoError("Private key must be 64 bytes")
 
     if timestamp is None:
-        timestamp = int(time.time() * 1_000_000_000)
+        timestamp = 0
 
     # Create message: hash || intent || timestamp
     message = code_hash + intent.encode() + struct.pack('>Q', timestamp)
@@ -219,13 +220,16 @@ def verify_block(
     signature: bytes,
     code_hash: bytes,
     intent: str,
-    timestamp: int
+    timestamp: int | None = None,
 ) -> bool:
     """
     Verify a code block's signature.
 
     Returns True if the code was signed by the author.
     """
+    if timestamp is None:
+        timestamp = 0
+
     if len(public_key) != 32:
         raise CryptoError("Public key must be 32 bytes")
     if len(signature) != 64:
