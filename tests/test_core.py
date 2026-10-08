@@ -157,6 +157,51 @@ class TestCodeMemory:
         assert caller_name in dep_block.depended_by
 
 
+class TestCryoStasis:
+    """Test freezing and thawing code memory from disk."""
+
+    def test_freeze_and_thaw(self, tmp_path):
+        """Test freezing memory, clearing memory, and thawing from disk."""
+        from consciousness_code import freeze, thaw
+
+        @aware(intent="Cryo function", author="stasis_author", tags=["stasis"])
+        def stasis_func():
+            pass
+
+        stasis_file = tmp_path / "cryo_test.json"
+        saved_path = freeze(stasis_file)
+        assert saved_path == str(stasis_file)
+
+        mem = memory()
+        mem.clear()
+        assert len(mem.all()) == 0
+
+        restored_count = thaw(stasis_file)
+        assert restored_count >= 1
+
+        results = ask("stasis_author")
+        assert len(results) >= 1
+        assert results[0].intent == "Cryo function"
+
+    def test_thaw_invalid_file(self, tmp_path):
+        """Test thawing tampered cryo stasis file raises ValueError."""
+        from consciousness_code import freeze, thaw
+
+        @aware(intent="Cryo tamper test")
+        def tamper_func():
+            pass
+
+        stasis_file = tmp_path / "tampered.json"
+        freeze(stasis_file)
+
+        # Tamper the file content
+        content = stasis_file.read_text(encoding="utf-8")
+        stasis_file.write_text(content.replace("Cryo tamper test", "Tampered intent"), encoding="utf-8")
+
+        with pytest.raises(ValueError, match="integrity check failed"):
+            thaw(stasis_file)
+
+
 class TestExplain:
     """Test code self-explanation."""
 

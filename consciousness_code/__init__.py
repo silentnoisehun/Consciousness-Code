@@ -21,8 +21,10 @@ from .core import (
     aware,
     aware_class,
     explain,
+    freeze,
     memory,
     stats,
+    thaw,
     trace,
     what_calls,
     what_depends,
@@ -62,6 +64,10 @@ __all__ = [
     "what_depends",
     "memory",
     "stats",
+
+    # Cryo Stasis
+    "freeze",
+    "thaw",
 
     # Crypto
     "AuthorKey",

@@ -156,6 +156,24 @@ my_func.__aware__.author
 my_func.__aware__.hash
 ```
 
+### Cryo Stasis (Freeze & Thaw)
+
+No need for a continuously running process. Freeze code memory to disk and thaw on call:
+
+```python
+from consciousness_code import aware, ask, freeze, thaw, memory
+
+# 1. Freeze memory state to cryptographically verified JSON stasis
+freeze("stasis.json")
+
+# 2. Clear memory or restart process
+memory().clear()
+
+# 3. Thaw memory state on demand
+thaw("stasis.json")
+print(ask("authentication"))
+```
+
 ---
 
 ## Cryptographic Identity

@@ -9,9 +9,11 @@ Created by Máté Róbert + Hope
 import functools
 import hashlib
 import inspect
+import json
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import (
     Any,
     Optional,
@@ -108,6 +110,47 @@ class CodeBlock:
                 return True
 
         return False
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert code block to serializable dictionary."""
+        return {
+            "name": self.name,
+            "qualified_name": self.qualified_name,
+            "hash": self.hash,
+            "author": self.author,
+            "intent": self.intent,
+            "description": self.description,
+            "source_code": self.source_code,
+            "file_path": self.file_path,
+            "line_number": self.line_number,
+            "created_at": self.created_at,
+            "calls": sorted(self.calls),
+            "called_by": sorted(self.called_by),
+            "depends_on": sorted(self.depends_on),
+            "depended_by": sorted(self.depended_by),
+            "tags": sorted(self.tags),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> 'CodeBlock':
+        """Reconstruct code block from dictionary."""
+        return cls(
+            name=data.get("name", ""),
+            qualified_name=data.get("qualified_name", ""),
+            hash=data.get("hash", ""),
+            author=data.get("author", "unknown"),
+            intent=data.get("intent", ""),
+            description=data.get("description", ""),
+            source_code=data.get("source_code", ""),
+            file_path=data.get("file_path", ""),
+            line_number=data.get("line_number", 0),
+            created_at=data.get("created_at", time.time()),
+            calls=set(data.get("calls", [])),
+            called_by=set(data.get("called_by", [])),
+            depends_on=set(data.get("depends_on", [])),
+            depended_by=set(data.get("depended_by", [])),
+            tags=set(data.get("tags", [])),
+        )
 
 
 class CodeMemory:
@@ -244,6 +287,61 @@ class CodeMemory:
             "authors": len(self._by_author),
             "tags": len(self._by_tag),
         }
+
+    def clear(self) -> None:
+        """Clear all registered code blocks from memory."""
+        self._blocks.clear()
+        self._by_file.clear()
+        self._by_author.clear()
+        self._by_tag.clear()
+
+    def freeze(self, filepath: str | Path = "cryo_stasis.json") -> str:
+        """
+        Freeze (persist) code memory into cryo stasis JSON file.
+
+        Returns path to frozen stasis file.
+        """
+        path = Path(filepath)
+        data = {
+            "version": "1.0.0",
+            "frozen_at": time.time(),
+            "blocks": [b.to_dict() for b in self._blocks.values()],
+        }
+        content = json.dumps(data, indent=2)
+        checksum = hashlib.sha3_256(content.encode()).hexdigest()
+        payload = {
+            "checksum": checksum,
+            "data": data,
+        }
+        path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        return str(path)
+
+    def thaw(self, filepath: str | Path = "cryo_stasis.json") -> int:
+        """
+        Thaw (restore) code memory from cryo stasis JSON file on demand.
+
+        Returns number of code blocks restored.
+        """
+        path = Path(filepath)
+        if not path.exists():
+            raise FileNotFoundError(f"Cryo stasis file not found: {path}")
+
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        checksum = payload.get("checksum")
+        data = payload.get("data", {})
+        expected_checksum = hashlib.sha3_256(json.dumps(data, indent=2).encode()).hexdigest()
+
+        if checksum != expected_checksum:
+            raise ValueError("Cryo stasis file integrity check failed! File may be tampered.")
+
+        blocks_data = data.get("blocks", [])
+        count = 0
+        for block_dict in blocks_data:
+            block = CodeBlock.from_dict(block_dict)
+            self.register(block)
+            count += 1
+
+        return count
 
 
 # Global memory instance
@@ -477,3 +575,13 @@ def memory() -> CodeMemory:
 def stats() -> dict[str, Any]:
     """Get statistics about the code memory."""
     return _memory.stats()
+
+
+def freeze(filepath: str | Path = "cryo_stasis.json") -> str:
+    """Freeze code memory to cryo stasis disk storage."""
+    return _memory.freeze(filepath)
+
+
+def thaw(filepath: str | Path = "cryo_stasis.json") -> int:
+    """Thaw code memory from cryo stasis disk storage on call."""
+    return _memory.thaw(filepath)
