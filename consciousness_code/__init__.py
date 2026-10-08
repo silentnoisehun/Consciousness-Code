@@ -22,9 +22,11 @@ from .core import (
     aware_class,
     explain,
     freeze,
+    freeze_binary,
     memory,
     stats,
     thaw,
+    thaw_binary,
     trace,
     what_calls,
     what_depends,
@@ -68,6 +70,8 @@ __all__ = [
     # Cryo Stasis
     "freeze",
     "thaw",
+    "freeze_binary",
+    "thaw_binary",
 
     # Crypto
     "AuthorKey",

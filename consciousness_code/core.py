@@ -10,6 +10,7 @@ import functools
 import hashlib
 import inspect
 import json
+import struct
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -151,6 +152,101 @@ class CodeBlock:
             depended_by=set(data.get("depended_by", [])),
             tags=set(data.get("tags", [])),
         )
+
+    def to_bytes(self) -> bytes:
+        """Serialize code block to native compact binary format."""
+        buf = bytearray()
+
+        def pack_str(s: str, is_large: bool = False):
+            encoded = s.encode("utf-8")
+            fmt = '>I' if is_large else '>H'
+            buf.extend(struct.pack(fmt, len(encoded)))
+            buf.extend(encoded)
+
+        def pack_set(st: set[str]):
+            buf.extend(struct.pack('>H', len(st)))
+            for item in sorted(st):
+                pack_str(item, is_large=False)
+
+        pack_str(self.name)
+        pack_str(self.qualified_name)
+        pack_str(self.hash)
+        pack_str(self.author)
+        pack_str(self.intent, is_large=True)
+        pack_str(self.description, is_large=True)
+        pack_str(self.source_code, is_large=True)
+        pack_str(self.file_path)
+        buf.extend(struct.pack('>I', self.line_number))
+        buf.extend(struct.pack('>d', self.created_at))
+        pack_set(self.calls)
+        pack_set(self.called_by)
+        pack_set(self.depends_on)
+        pack_set(self.depended_by)
+        pack_set(self.tags)
+
+        return bytes(buf)
+
+    @classmethod
+    def from_bytes(cls, data: bytes | bytearray) -> tuple['CodeBlock', int]:
+        """Deserialize code block from native compact binary format. Returns (CodeBlock, bytes_read)."""
+        offset = 0
+
+        def unpack_str(is_large: bool = False) -> str:
+            nonlocal offset
+            fmt = '>I' if is_large else '>H'
+            size = struct.calcsize(fmt)
+            length = struct.unpack(fmt, data[offset:offset+size])[0]
+            offset += size
+            val = data[offset:offset+length].decode("utf-8")
+            offset += length
+            return val
+
+        def unpack_set() -> set[str]:
+            nonlocal offset
+            count = struct.unpack('>H', data[offset:offset+2])[0]
+            offset += 2
+            st = set()
+            for _ in range(count):
+                st.add(unpack_str(is_large=False))
+            return st
+
+        name = unpack_str()
+        qualified_name = unpack_str()
+        code_hash = unpack_str()
+        author = unpack_str()
+        intent = unpack_str(is_large=True)
+        description = unpack_str(is_large=True)
+        source_code = unpack_str(is_large=True)
+        file_path = unpack_str()
+        line_number = struct.unpack('>I', data[offset:offset+4])[0]
+        offset += 4
+        created_at = struct.unpack('>d', data[offset:offset+8])[0]
+        offset += 8
+        calls = unpack_set()
+        called_by = unpack_set()
+        depends_on = unpack_set()
+        depended_by = unpack_set()
+        tags = unpack_set()
+
+        block = cls(
+            name=name,
+            qualified_name=qualified_name,
+            hash=code_hash,
+            author=author,
+            intent=intent,
+            description=description,
+            source_code=source_code,
+            file_path=file_path,
+            line_number=line_number,
+            created_at=created_at,
+            calls=calls,
+            called_by=called_by,
+            depends_on=depends_on,
+            depended_by=depended_by,
+            tags=tags,
+        )
+
+        return block, offset
 
 
 class CodeMemory:
@@ -316,6 +412,27 @@ class CodeMemory:
         path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
         return str(path)
 
+    def freeze_binary(self, filepath: str | Path = "cryo_stasis.bin") -> str:
+        """
+        Freeze code memory into raw native binary file without JSON overhead.
+
+        Returns path to frozen stasis file.
+        """
+        path = Path(filepath)
+        payload = bytearray()
+        for b in self._blocks.values():
+            payload.extend(b.to_bytes())
+
+        checksum = hashlib.sha3_256(payload).digest()
+        header = bytearray()
+        header.extend(b"CRYO")
+        header.extend(struct.pack('>H', 1))  # Version 1
+        header.extend(struct.pack('>I', len(self._blocks)))
+        header.extend(checksum)
+
+        path.write_bytes(bytes(header + payload))
+        return str(path)
+
     def thaw(self, filepath: str | Path = "cryo_stasis.json") -> int:
         """
         Thaw (restore) code memory from cryo stasis JSON file on demand.
@@ -342,6 +459,42 @@ class CodeMemory:
             count += 1
 
         return count
+
+    def thaw_binary(self, filepath: str | Path = "cryo_stasis.bin") -> int:
+        """
+        Thaw code memory natively from raw binary file.
+
+        Returns number of code blocks restored.
+        """
+        path = Path(filepath)
+        if not path.exists():
+            raise FileNotFoundError(f"Cryo stasis file not found: {path}")
+
+        data = path.read_bytes()
+        if len(data) < 42:
+            raise ValueError("Invalid cryo stasis binary header!")
+
+        magic = data[:4]
+        if magic != b"CRYO":
+            raise ValueError(f"Invalid magic bytes in binary cryo stasis file: {magic!r}")
+
+        _version = struct.unpack('>H', data[4:6])[0]
+        block_count = struct.unpack('>I', data[6:10])[0]
+        expected_checksum = data[10:42]
+        payload = data[42:]
+
+        if hashlib.sha3_256(payload).digest() != expected_checksum:
+            raise ValueError("Binary cryo stasis file integrity check failed! File may be tampered.")
+
+        offset = 0
+        restored = 0
+        for _ in range(block_count):
+            block, read_bytes = CodeBlock.from_bytes(payload[offset:])
+            self.register(block)
+            offset += read_bytes
+            restored += 1
+
+        return restored
 
 
 # Global memory instance
@@ -577,11 +730,25 @@ def stats() -> dict[str, Any]:
     return _memory.stats()
 
 
-def freeze(filepath: str | Path = "cryo_stasis.json") -> str:
-    """Freeze code memory to cryo stasis disk storage."""
+def freeze(filepath: str | Path = "cryo_stasis.bin", binary: bool = True) -> str:
+    """Freeze code memory to cryo stasis disk storage (defaults to fast native binary format)."""
+    if binary or str(filepath).endswith(".bin"):
+        return _memory.freeze_binary(filepath)
     return _memory.freeze(filepath)
 
 
-def thaw(filepath: str | Path = "cryo_stasis.json") -> int:
-    """Thaw code memory from cryo stasis disk storage on call."""
+def thaw(filepath: str | Path = "cryo_stasis.bin", binary: bool = True) -> int:
+    """Thaw code memory from cryo stasis disk storage on call (defaults to fast native binary format)."""
+    if binary or str(filepath).endswith(".bin"):
+        return _memory.thaw_binary(filepath)
     return _memory.thaw(filepath)
+
+
+def freeze_binary(filepath: str | Path = "cryo_stasis.bin") -> str:
+    """Freeze code memory to native compact binary format."""
+    return _memory.freeze_binary(filepath)
+
+
+def thaw_binary(filepath: str | Path = "cryo_stasis.bin") -> int:
+    """Thaw code memory natively from compact binary format."""
+    return _memory.thaw_binary(filepath)

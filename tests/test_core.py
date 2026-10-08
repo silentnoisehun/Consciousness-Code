@@ -158,48 +158,89 @@ class TestCodeMemory:
 
 
 class TestCryoStasis:
-    """Test freezing and thawing code memory from disk."""
+    """Test freezing and thawing code memory from disk (binary & JSON)."""
 
-    def test_freeze_and_thaw(self, tmp_path):
-        """Test freezing memory, clearing memory, and thawing from disk."""
-        from consciousness_code import freeze, thaw
+    def test_freeze_and_thaw_binary(self, tmp_path):
+        """Test native binary freezing memory, clearing memory, and thawing from disk."""
+        from consciousness_code import freeze_binary, thaw_binary
 
-        @aware(intent="Cryo function", author="stasis_author", tags=["stasis"])
-        def stasis_func():
+        @aware(intent="Binary Cryo function", author="binary_author", tags=["binary_stasis"])
+        def binary_stasis_func():
             pass
 
-        stasis_file = tmp_path / "cryo_test.json"
-        saved_path = freeze(stasis_file)
+        stasis_file = tmp_path / "cryo_test.bin"
+        saved_path = freeze_binary(stasis_file)
         assert saved_path == str(stasis_file)
 
         mem = memory()
         mem.clear()
         assert len(mem.all()) == 0
 
-        restored_count = thaw(stasis_file)
+        restored_count = thaw_binary(stasis_file)
         assert restored_count >= 1
 
-        results = ask("stasis_author")
+        results = ask("binary_author")
         assert len(results) >= 1
-        assert results[0].intent == "Cryo function"
+        assert results[0].intent == "Binary Cryo function"
 
-    def test_thaw_invalid_file(self, tmp_path):
-        """Test thawing tampered cryo stasis file raises ValueError."""
+    def test_freeze_and_thaw_json(self, tmp_path):
+        """Test JSON freezing memory, clearing memory, and thawing from disk."""
         from consciousness_code import freeze, thaw
 
-        @aware(intent="Cryo tamper test")
+        @aware(intent="JSON Cryo function", author="json_author")
+        def json_stasis_func():
+            pass
+
+        stasis_file = tmp_path / "cryo_test.json"
+        saved_path = freeze(stasis_file, binary=False)
+        assert saved_path == str(stasis_file)
+
+        mem = memory()
+        mem.clear()
+        assert len(mem.all()) == 0
+
+        restored_count = thaw(stasis_file, binary=False)
+        assert restored_count >= 1
+
+        results = ask("json_author")
+        assert len(results) >= 1
+
+    def test_thaw_invalid_binary_file(self, tmp_path):
+        """Test thawing tampered binary cryo stasis file raises ValueError."""
+        from consciousness_code import freeze_binary, thaw_binary
+
+        @aware(intent="Binary Cryo tamper test")
         def tamper_func():
             pass
 
+        stasis_file = tmp_path / "tampered.bin"
+        freeze_binary(stasis_file)
+
+        # Tamper the file content bytearray
+        content = bytearray(stasis_file.read_bytes())
+        content[-1] ^= 0xFF  # Corrupt last byte
+        stasis_file.write_bytes(content)
+
+        with pytest.raises(ValueError, match="integrity check failed"):
+            thaw_binary(stasis_file)
+
+    def test_thaw_invalid_json_file(self, tmp_path):
+        """Test thawing tampered json cryo stasis file raises ValueError."""
+        from consciousness_code import freeze, thaw
+
+        @aware(intent="JSON Cryo tamper test")
+        def tamper_json():
+            pass
+
         stasis_file = tmp_path / "tampered.json"
-        freeze(stasis_file)
+        freeze(stasis_file, binary=False)
 
         # Tamper the file content
         content = stasis_file.read_text(encoding="utf-8")
-        stasis_file.write_text(content.replace("Cryo tamper test", "Tampered intent"), encoding="utf-8")
+        stasis_file.write_text(content.replace("JSON Cryo tamper test", "Tampered intent"), encoding="utf-8")
 
         with pytest.raises(ValueError, match="integrity check failed"):
-            thaw(stasis_file)
+            thaw(stasis_file, binary=False)
 
 
 class TestExplain:

@@ -146,9 +146,33 @@ def run_all_benchmarks():
     ask_latency_us = benchmark_ask_queries(100)
     crypto_res = benchmark_crypto(100)
 
+    # Cryo Stasis Freeze & Thaw Speed Test
+    import os
+
+    from consciousness_code import freeze_binary, thaw_binary
+    stasis_file = "bench_stasis.bin"
+    t0 = time.perf_counter()
+    freeze_binary(stasis_file)
+    freeze_ms = (time.perf_counter() - t0) * 1000
+
+    file_bytes = os.path.getsize(stasis_file)
+
+    memory().clear()
+    t0 = time.perf_counter()
+    restored = thaw_binary(stasis_file)
+    thaw_ms = (time.perf_counter() - t0) * 1000
+
+    if os.path.exists(stasis_file):
+        os.remove(stasis_file)
+
+    print(f"[Cryo Stasis] Frozen {restored} blocks ({file_bytes / 1024:.1f} KB) in {freeze_ms:.2f} ms")
+    print(f"[Cryo Stasis] Thawed {restored} blocks from disk in {thaw_ms:.2f} ms")
+
     print("\n============================================================")
     print("SUMMARY")
     print("============================================================")
+    print(f"Cryo Stasis Freeze (10k blocks): {freeze_ms:.2f} ms")
+    print(f"Cryo Stasis Thaw   (10k blocks): {thaw_ms:.2f} ms")
     print(f"Decorator Registration: {dec_us:.2f} μs / function")
     print(f"Memory Search Query:    {ask_latency_us:.2f} μs / query (over 10,000+ blocks)")
     print(f"Code Hashing:           {crypto_res['hash_us']:.2f} μs / hash")

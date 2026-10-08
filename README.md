@@ -156,21 +156,21 @@ my_func.__aware__.author
 my_func.__aware__.hash
 ```
 
-### Cryo Stasis (Freeze & Thaw)
+### Cryo Stasis (Native Binary Freeze & Thaw)
 
-No need for a continuously running process. Freeze code memory to disk and thaw on call:
+No need for a continuously running process or JSON conversion overhead. Freeze code memory directly into compact binary stasis (`.bin`) and thaw on call:
 
 ```python
 from consciousness_code import aware, ask, freeze, thaw, memory
 
-# 1. Freeze memory state to cryptographically verified JSON stasis
-freeze("stasis.json")
+# 1. Freeze memory state to native binary format with SHA3-256 header check (70%+ disk savings)
+freeze("stasis.bin")
 
 # 2. Clear memory or restart process
 memory().clear()
 
 # 3. Thaw memory state on demand
-thaw("stasis.json")
+thaw("stasis.bin")
 print(ask("authentication"))
 ```
 
@@ -246,6 +246,8 @@ python benchmarks/benchmark.py
 | Benchmark Metric | Measured Performance | Throughput / Rate |
 |------------------|----------------------|-------------------|
 | **Decorator Overhead (`@aware`)** | ~260 μs / function | ~3,800 functions / sec |
+| **Binary Cryo Stasis Freeze (100 blocks)** | ~1.3 ms / save | ~750 saves / sec |
+| **Binary Cryo Stasis Thaw (100 blocks)** | ~12.5 ms / load | ~80 loads / sec |
 | **Memory Search Query (`ask()`, 100 blocks)** | ~0.14 ms / query | ~7,100 queries / sec |
 | **Memory Search Query (`ask()`, 10,000 blocks)** | ~14.3 ms / query | ~70 queries / sec |
 | **SHA3-256 Hashing** | ~2.9 μs / hash | ~346,000 hashes / sec |
