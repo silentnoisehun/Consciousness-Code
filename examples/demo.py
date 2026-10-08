@@ -5,8 +5,14 @@ This example shows how code can know itself.
 No indexing. No parsing. Just ask.
 """
 
-from consciousness_code import aware, aware_class, ask, explain, memory, stats
+import os
+import sys
 
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+import os
+
+from consciousness_code import ask, aware, aware_class, freeze, memory, stats, thaw
 
 # =============================================================================
 # Make functions self-aware
@@ -120,6 +126,22 @@ if __name__ == "__main__":
     print("-" * 40)
     for key, value in stats().items():
         print(f"  {key}: {value}")
+    print()
+
+    # Cryo Stasis Demo (Freeze & Thaw)
+    print("Cryo Stasis (Freeze & Thaw):")
+    print("-" * 40)
+    stasis_path = "demo_stasis.json"
+    saved_path = freeze(stasis_path)
+    print(f"  Frozen code memory to disk: {saved_path}")
+
+    memory().clear()
+    print(f"  Memory cleared. Total blocks in memory: {len(memory().all())}")
+
+    restored = thaw(stasis_path)
+    print(f"  Thawed from cryo stasis. Restored {restored} blocks!")
+    if os.path.exists(stasis_path):
+        os.remove(stasis_path)
     print()
 
     print("=" * 60)

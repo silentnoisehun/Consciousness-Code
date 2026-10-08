@@ -1,13 +1,17 @@
 """Tests for Consciousness Code cryptography module."""
 
+import time
+
 import pytest
+
 from consciousness_code.crypto import (
+    CryptoError,
+    SignedBlock,
     generate_author_key,
     hash_code,
+    self_test,
     sign_block,
     verify_block,
-    self_test,
-    CryptoError,
 )
 
 
@@ -55,11 +59,16 @@ class TestSignVerify:
     """Test signing and verification."""
 
     def test_sign_and_verify(self):
-        """Test basic sign and verify."""
+        """Test basic sign and verify with default and explicit timestamp."""
         key = generate_author_key()
         code_hash = hash_code("def secure(): pass")
 
-        import time
+        # Test with default timestamp
+        sig_default = sign_block(key.private_key, code_hash, "Secure function")
+        assert len(sig_default) == 64
+        assert verify_block(key.public_key, sig_default, code_hash, "Secure function")
+
+        # Test with explicit timestamp
         timestamp = int(time.time() * 1_000_000_000)
 
         signature = sign_block(
@@ -84,7 +93,6 @@ class TestSignVerify:
         key = generate_author_key()
         code_hash = hash_code("def test(): pass")
 
-        import time
         timestamp = int(time.time() * 1_000_000_000)
 
         signature = sign_block(
@@ -106,7 +114,6 @@ class TestSignVerify:
         """Test that wrong code fails verification."""
         key = generate_author_key()
 
-        import time
         timestamp = int(time.time() * 1_000_000_000)
 
         signature = sign_block(
@@ -131,7 +138,6 @@ class TestSignVerify:
 
         code_hash = hash_code("def test(): pass")
 
-        import time
         timestamp = int(time.time() * 1_000_000_000)
 
         signature = sign_block(
@@ -149,6 +155,49 @@ class TestSignVerify:
             "Intent",
             timestamp
         )
+
+
+class TestSignedBlock:
+    """Test SignedBlock serialization and deserialization."""
+
+    def test_signed_block_roundtrip(self):
+        """Test roundtrip serialization of SignedBlock."""
+        key = generate_author_key()
+        code_hash = hash_code("def test_code(): pass")
+        intent = "Test intent serialization"
+        timestamp = 123456789
+        signature = sign_block(key.private_key, code_hash, intent, timestamp)
+
+        block = SignedBlock(
+            code_hash=code_hash,
+            intent=intent,
+            author_id=key.author_id,
+            timestamp=timestamp,
+            signature=signature,
+        )
+
+        data = block.to_bytes()
+        restored = SignedBlock.from_bytes(data)
+
+        assert restored.code_hash == block.code_hash
+        assert restored.intent == block.intent
+        assert restored.author_id == block.author_id
+        assert restored.timestamp == block.timestamp
+        assert restored.signature == block.signature
+
+
+class TestCryptoErrors:
+    """Test error handling in crypto module."""
+
+    def test_invalid_key_length(self):
+        """Test CryptoError on invalid key lengths."""
+        code_hash = hash_code("test")
+
+        with pytest.raises(CryptoError):
+            sign_block(b"short_key", code_hash, "Intent")
+
+        with pytest.raises(CryptoError):
+            verify_block(b"short_pubkey", b"0" * 64, code_hash, "Intent")
 
 
 class TestSelfTest:
